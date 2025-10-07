@@ -1,0 +1,8 @@
+/dataset/
+/build/
+/temp/
+/.cache/
+
+# pixi environments
+.pixi/*
+!.pixi/config.toml
