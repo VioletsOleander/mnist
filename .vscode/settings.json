@@ -1,0 +1,7 @@
+{
+    "cmake.cmakePath": "${workspaceFolder}/.pixi/envs/default/bin/cmake",
+    "cmake.configureEnvironment": {
+        "CMAKE_PREFIX_PATH": "${workspaceFolder}/.pixi/envs/default/share/cmake"
+    },
+    "cmake.automaticReconfigure": false,
+}
