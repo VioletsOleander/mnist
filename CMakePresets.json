@@ -1,0 +1,33 @@
+{
+    "version": 10,
+    "configurePresets": [
+        {
+            "name": "default",
+            "description": "default preset",
+            "hidden": true,
+            "generator": "Ninja",
+            "environment": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "1",
+                "CMAKE_PREFIX_PATH": "${sourceDir}/.pixi/envs/default/share/cmake",
+                "CC": "clang",
+                "CXX": "clang"
+            }
+        },
+        {
+            "name": "release",
+            "inherits": "default",
+            "description": "Release build with optimizations",
+            "environment": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "debug",
+            "inherits": "default",
+            "description": "Debug build with debug symbols",
+            "environment": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        }
+    ]
+}
