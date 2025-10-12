@@ -17,7 +17,7 @@
             "name": "release",
             "inherits": "default",
             "description": "Release build with optimizations",
-            "environment": {
+            "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release"
             }
         },
@@ -25,7 +25,7 @@
             "name": "debug",
             "inherits": "default",
             "description": "Debug build with debug symbols",
-            "environment": {
+            "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug"
             }
         }
