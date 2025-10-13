@@ -28,12 +28,12 @@ void parse_args(Config &config, CLI::App &app, int argc, char *argv[]) {
     }
 
     std::string dataset_path =
-        tbl["dataset_path"].as<std::string>()->value_or("");
+        tbl.at("dataset_path").as<std::string>()->value_or("");
     if (dataset_path.empty()) {
         throw std::runtime_error("dataset_path is required in the config file");
     }
 
-    std::string mode = tbl["mode"].as<std::string>()->value_or("");
+    std::string mode = tbl.at("mode").as<std::string>()->value_or("");
     if (mode.empty()) {
         throw std::runtime_error("mode is required in the config file");
     } else if (mode != "train" && mode != "test") {

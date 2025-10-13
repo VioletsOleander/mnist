@@ -17,6 +17,9 @@
     } catch (const std::runtime_error &err) {                                  \
         std::cerr << "Runtime error: " << err.what() << "\n";                  \
         return 1;                                                              \
+    } catch (const std::logic_error &err) {                                    \
+        std::cerr << "Logic error: " << err.what() << "\n";                    \
+        return 1;                                                              \
     }
 #endif
 
