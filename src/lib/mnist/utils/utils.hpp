@@ -2,8 +2,13 @@
 
 #include <filesystem>
 
-#include "CLI/CLI.hpp"
 #include <toml++/toml.h>
+
+namespace CLI {
+
+class App;
+
+}
 
 #ifndef MNIST_PARSE_OR_EXIT
 #define MNIST_PARSE_OR_EXIT(config, app, argc, argv)                           \

@@ -13,27 +13,17 @@ void parse_args(Config &config, CLI::App &app, int argc, char *argv[]) {
         ->required()
         ->check(CLI::ExistingFile);
 
-    try {
-        app.parse(argc, argv);
-    } catch (const CLI::ParseError &e) {
-        throw;
-    }
+    app.parse(argc, argv);
 
     toml::table tbl;
+    tbl = toml::parse_file(config_path);
 
-    try {
-        tbl = toml::parse_file(config_path);
-    } catch (const toml::parse_error &err) {
-        throw;
-    }
-
-    std::string dataset_path =
-        tbl.at("dataset_path").as<std::string>()->value_or("");
+    std::string dataset_path = tbl["dataset_path"].value_or<std::string>("");
     if (dataset_path.empty()) {
         throw std::runtime_error("dataset_path is required in the config file");
     }
 
-    std::string mode = tbl.at("mode").as<std::string>()->value_or("");
+    std::string mode = tbl["mode"].value_or<std::string>("");
     if (mode.empty()) {
         throw std::runtime_error("mode is required in the config file");
     } else if (mode != "train" && mode != "test") {
