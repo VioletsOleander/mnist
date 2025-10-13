@@ -7,11 +7,11 @@
 #include <arrow/api.h>
 #include <torch/torch.h>
 
-#include "mnist/utils/utils.h"
+#include "mnist/utils/utils.hpp"
 
 namespace mnist::data {
 
-struct MNISTDataset : public torch::data::Dataset<MNISTDataset> {
+class MNISTDataset : public torch::data::Dataset<MNISTDataset> {
   public:
     explicit MNISTDataset(
         const std::filesystem::path &dataset_path,

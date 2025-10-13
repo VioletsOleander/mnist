@@ -6,8 +6,8 @@
 #include <parquet/arrow/writer.h>
 #include <torch/torch.h>
 
-#include "dataset.h"
-#include "mnist/utils/utils.h"
+#include "dataset.hpp"
+#include "mnist/utils/utils.hpp"
 
 namespace fs = std::filesystem;
 namespace utils = mnist::utils;

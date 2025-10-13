@@ -1,5 +1,6 @@
 add_library(mnist STATIC
     data/dataset/dataset.cpp
+    utils/utils.cpp
 )
 
 target_include_directories(mnist PUBLIC ${CMAKE_SOURCE_DIR}/src/lib)
