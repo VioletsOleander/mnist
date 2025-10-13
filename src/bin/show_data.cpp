@@ -1,17 +1,18 @@
-#include <filesystem>
 #include <string>
 
-#include <toml++/toml.h>
+#include <CLI/CLI.hpp>
+#include <mnist/mnist.hpp>
 
-#include <mnist/mnist.h>
+int main(int argc, char *argv[]) {
+    CLI::App app{"MNIST Dataset Viewer"};
+    mnist::utils::Config config;
 
-using namespace mnist;
+    if (int result = mnist::utils::parse_args(config, app, argc, argv);
+        result != 0) {
+        return result;
+    }
 
-int main() {
-    auto dataset_path = std::filesystem::path("../dataset/mnist");
-    auto mode = utils::Mode::TRAIN;
-
-    auto dataset = data::MNISTDataset(dataset_path, mode);
+    auto dataset = mnist::data::MNISTDataset(config.dataset_path, config.mode);
 
     std::cout << "Dataset schema: " << dataset.schema() << std::endl;
 

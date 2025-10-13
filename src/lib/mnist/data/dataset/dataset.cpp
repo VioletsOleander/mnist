@@ -6,8 +6,8 @@
 #include <parquet/arrow/writer.h>
 #include <torch/torch.h>
 
-#include "dataset.h"
-#include "mnist/utils/utils.h"
+#include "dataset.hpp"
+#include "mnist/utils/utils.hpp"
 
 namespace fs = std::filesystem;
 namespace utils = mnist::utils;
@@ -123,5 +123,9 @@ MNISTDataset::get(size_t index) {
 }
 
 torch::optional<size_t> MNISTDataset::size() const { return images_.size(0); }
+
+std::string MNISTDataset::schema() const {
+    return table_->schema()->ToString(true);
+}
 
 } // namespace mnist::data

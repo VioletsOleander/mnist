@@ -1,17 +1,21 @@
 #pragma once
 
-#include <arrow/table.h>
 #include <filesystem>
 #include <string>
 
-#include <arrow/api.h>
 #include <torch/torch.h>
 
-#include "mnist/utils/utils.h"
+#include "mnist/utils/utils.hpp"
+
+namespace arrow {
+
+class Table;
+
+}
 
 namespace mnist::data {
 
-struct MNISTDataset : public torch::data::Dataset<MNISTDataset> {
+class MNISTDataset : public torch::data::Dataset<MNISTDataset> {
   public:
     explicit MNISTDataset(
         const std::filesystem::path &dataset_path,
@@ -22,7 +26,7 @@ struct MNISTDataset : public torch::data::Dataset<MNISTDataset> {
 
     torch::optional<size_t> size() const override;
 
-    std::string schema() const { return table_->schema()->ToString(true); };
+    std::string schema() const;
 
   private:
     torch::Tensor images_;
