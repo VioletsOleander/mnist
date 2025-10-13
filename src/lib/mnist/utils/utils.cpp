@@ -34,10 +34,10 @@ void parse_args(Config &config, CLI::App &app, int argc, char *argv[]) {
     }
 
     std::string mode = tbl["mode"].as<std::string>()->value_or("");
-    if (mode != "train" && mode != "test") {
-        throw std::runtime_error("mode must be either 'train' or 'test'");
-    } else if (mode.empty()) {
+    if (mode.empty()) {
         throw std::runtime_error("mode is required in the config file");
+    } else if (mode != "train" && mode != "test") {
+        throw std::runtime_error("mode must be either 'train' or 'test'");
     }
 
     config.dataset_path = std::filesystem::path(dataset_path);
