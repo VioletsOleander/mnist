@@ -1,10 +1,7 @@
-#include "mnist/utils/utils.hpp"
-#include <filesystem>
 #include <string>
 
 #include <CLI/CLI.hpp>
 #include <mnist/mnist.hpp>
-#include <toml++/toml.h>
 
 int main(int argc, char *argv[]) {
     CLI::App app{"MNIST Dataset Viewer"};
