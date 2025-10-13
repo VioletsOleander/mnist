@@ -1,3 +1,5 @@
+#include "mnist/mnist.h"
+
 #include <iostream>
 #include <torch/torch.h>
 

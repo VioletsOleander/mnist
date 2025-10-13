@@ -10,7 +10,7 @@
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "1",
                 "CMAKE_PREFIX_PATH": "${sourceDir}/.pixi/envs/default/share/cmake",
                 "CC": "clang",
-                "CXX": "clang"
+                "CXX": "clang++"
             }
         },
         {
