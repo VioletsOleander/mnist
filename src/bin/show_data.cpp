@@ -1,3 +1,4 @@
+#include "mnist/utils/utils.hpp"
 #include <filesystem>
 #include <string>
 
@@ -8,7 +9,11 @@
 int main(int argc, char *argv[]) {
     CLI::App app{"MNIST Dataset Viewer"};
     mnist::utils::Config config;
-    MNIST_PARSE_OR_EXIT(config, app, argc, argv)
+
+    if (int result = mnist::utils::parse_args(config, app, argc, argv);
+        result != 0) {
+        return result;
+    }
 
     auto dataset = mnist::data::MNISTDataset(config.dataset_path, config.mode);
 
