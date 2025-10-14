@@ -1,9 +1,17 @@
+#include <arrow/array/array_decimal.h>
+#include <arrow/chunked_array.h>
+#include <arrow/type.h>
+#include <arrow/type_fwd.h>
 #include <filesystem>
 
 #include <arrow/api.h>
 #include <arrow/io/api.h>
+#include <cassert>
+#include <cstring> // for std::memcpy
 #include <parquet/arrow/reader.h>
 #include <parquet/arrow/writer.h>
+#include <stdexcept>
+#include <torch/csrc/autograd/generated/variable_factories.h>
 #include <torch/torch.h>
 
 #include "dataset.hpp"
@@ -52,80 +60,130 @@ namespace mnist::data {
 
 MNISTDataset::MNISTDataset(const fs::path &dataset_path,
                            const utils::Mode &mode) {
+    /// Read the Parquet file
     auto file_paths = get_parquet_file_paths(dataset_path);
 
     table_ = read_parquet(file_paths[mode]);
 
-    //     // Extract image and label columns
-    //     auto image_column = table->GetColumnByName("image");
-    //     auto label_column = table->GetColumnByName("label");
+    auto image_column = table_->GetColumnByName("image");
+    auto label_column = table_->GetColumnByName("label");
 
-    //     if (!image_column || !label_column) {
-    //         throw std::runtime_error(
-    //             "Parquet file must contain 'image' and 'label' columns.");
-    //     }
+    if (!image_column || !label_column) {
+        throw std::runtime_error(
+            "Parquet file must contain 'image' and 'label' columns.");
+    }
 
-    //     // Process images
-    //     auto image_chunks = image_column->chunks();
-    //     std::vector<uint8_t> image_data;
-    //     long num_rows = table->num_rows();
+    auto result = image_column->Flatten();
+    if (!result.ok()) {
+        throw std::runtime_error("Error flattening image column: " +
+                                 result.status().ToString());
+    }
 
-    //     // Assuming images are stored as structs of bytes
-    //     for (const auto &chunk : image_chunks) {
-    //         auto struct_array =
-    //         std::static_pointer_cast<arrow::StructArray>(chunk); auto
-    //         byte_array_ptr = struct_array->GetFieldByName("bytes"); auto
-    //         byte_array =
-    //             std::static_pointer_cast<arrow::BinaryArray>(byte_array_ptr);
+    // image and label ChunkedArray are assumed to have only one chunk
+    auto image_array = result.ValueOrDie()[0]->chunk(0);
+    auto label_array = label_column->chunk(0);
 
-    //         for (int64_t i = 0; i < byte_array->length(); ++i) {
-    //             auto value = byte_array->Value(i);
-    //             image_data.insert(image_data.end(), value.begin(),
-    //             value.end());
-    //         }
-    //     }
+    assert(image_array->type_id() == arrow::Type::BINARY &&
+           "Image array type must be BINARY");
+    assert(label_array->type_id() == arrow::Type::INT64 &&
+           "Label array type must be INT64");
 
-    //     images_ =
-    //         torch::from_blob(image_data.data(), {num_rows, 1, 28, 28},
-    //         torch::kU8)
-    //             .clone();
-    //     images_ = images_.to(torch::kFloat32).div(255.0);
+    /// Convert image array to torch tensor
+    {
+        // each item in image array is assume to be an (28 * 28) array of uint8
+        // since MNIST images are 28x28 pixels, and each pixel is represented
+        // as a gray scale value from 0 to 255
+        const int64_t num_imgs = image_array->length();
+        constexpr int32_t img_size = 28 * 28;
 
-    //     // Process labels
-    //     auto label_chunks = label_column->chunks();
-    //     std::vector<int64_t> label_data;
-    //     for (const auto &chunk : label_chunks) {
-    //         auto int_array =
-    //         std::static_pointer_cast<arrow::Int64Array>(chunk); for (int64_t
-    //         i = 0; i < int_array->length(); ++i) {
-    //             label_data.push_back(int_array->Value(i));
-    //         }
-    //     }
+        auto binary_array =
+            std::static_pointer_cast<arrow::BinaryArray>(image_array);
 
-    //     labels_ = torch::from_blob(label_data.data(),
-    //     {(long)label_data.size()},
-    //                                torch::kInt64)
-    //                   .clone();
-    // }
+        // ensure each entry has expected length
+        for (int64_t i = 0; i < num_imgs; ++i) {
+            if (binary_array->value_length(i) != img_size) {
+                std::cout << binary_array->value_length(i) << "\n";
+                throw std::runtime_error("Binary entry size != 28*28");
+            }
+        }
 
-    // torch::data::Example<torch::Tensor, torch::Tensor>
-    // MNISTDataset::get(size_t index) {
-    //     return {images_[index], labels_[index]};
-    // }
+        // total bytes for all images
+        int64_t start_off = binary_array->value_offset(0);
+        int64_t end_off = binary_array->value_offset(num_imgs);
+        int64_t total_bytes = end_off - start_off;
+        if (total_bytes != num_imgs * img_size) {
+            throw std::runtime_error("Unexpected total image bytes");
+        }
 
-    // torch::optional<size_t> MNISTDataset::size() const { return
-    // images_.size(0); }
+        image_tensor_ =
+            torch::empty({(long)num_imgs, 1, 28, 28}, torch::kUInt8);
+
+        auto values_buf = binary_array->value_data();
+        const uint8_t *src = values_buf->data() + start_off;
+
+        std::memcpy(image_tensor_.mutable_data_ptr(), src,
+                    static_cast<size_t>(total_bytes));
+
+        // convert to float and normalize
+        image_tensor_ =
+            image_tensor_.to(torch::kFloat32).div(255.0).contiguous();
+    }
+
+    /// Convert label array to torch tensor
+    {
+        const int64_t num_labels = label_array->length();
+
+        auto int_array =
+            std::static_pointer_cast<arrow::Int64Array>(label_array);
+
+        const int64_t *src = int_array->raw_values();
+
+        label_tensor_ = torch::empty({(long)num_labels}, torch::kInt64);
+
+        std::memcpy(label_tensor_.mutable_data_ptr(), src,
+                    static_cast<size_t>(num_labels * sizeof(int64_t)));
+    }
 }
 
 torch::data::Example<torch::Tensor, torch::Tensor>
 MNISTDataset::get(size_t index) {
-    return {images_[index], labels_[index]};
+    auto img = image_tensor_.select(0, static_cast<long>(index));
+    auto lbl = label_tensor_.select(0, static_cast<long>(index));
+    return {img, lbl};
 }
 
-torch::optional<size_t> MNISTDataset::size() const { return images_.size(0); }
+torch::optional<size_t> MNISTDataset::size() const {
+    return image_tensor_.size(0);
+}
 
-std::string MNISTDataset::schema() const {
-    return table_->schema()->ToString(true);
+void MNISTDataset::print_table_info() const {
+    std::cout << "Schema:\n" << table_->schema()->ToString(true) << "\n";
+
+    auto image_column = table_->GetColumnByName("image");
+    std::cout << "\nImage Column:\n"
+              << "Num Chunks: " << image_column->num_chunks() << "\n"
+              << "Length: " << image_column->length() << "\n"
+              << "Type: " << image_column->type()->ToString() << "\n"
+              << "String: " << image_column->ToString() << "\n";
+
+    auto label_column = table_->GetColumnByName("label");
+    std::cout << "\nLabel Column:\n"
+              << "Num Chunks: " << label_column->num_chunks() << "\n"
+              << "Length: " << label_column->length() << "\n"
+              << "Type: " << label_column->type()->ToString() << "\n"
+              << "String: " << label_column->ToString() << "\n";
+}
+
+void MNISTDataset::print_tensor_info() const {
+    std::cout << "\nImage Tensor:\n"
+              << "Size: " << image_tensor_.sizes() << "\n"
+              << "Type: " << image_tensor_.dtype() << "\n"
+              << "String: " << image_tensor_.toString() << "\n";
+
+    std::cout << "\nLabel Tensor:\n"
+              << "Size: " << label_tensor_.sizes() << "\n"
+              << "Type: " << label_tensor_.dtype() << "\n"
+              << "String: " << label_tensor_.toString() << "\n";
 }
 
 } // namespace mnist::data

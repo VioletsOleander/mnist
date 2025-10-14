@@ -14,7 +14,8 @@ int main(int argc, char *argv[]) {
 
     auto dataset = mnist::data::MNISTDataset(config.dataset_path, config.mode);
 
-    std::cout << "Dataset schema: " << dataset.schema() << std::endl;
+    dataset.print_table_info();
+    dataset.print_tensor_info();
 
     return 0;
 }
