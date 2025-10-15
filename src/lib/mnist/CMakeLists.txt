@@ -10,3 +10,6 @@ target_link_libraries(mnist PUBLIC ${TORCH_LIBRARIES} Arrow::arrow_shared Parque
 
 target_link_options(mnist PUBLIC -fuse-ld=lld)
 
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_compile_definitions(mnist PUBLIC MNIST_DEBUG)
+endif()

@@ -37,6 +37,8 @@ python = "*"
 
 [feature.dataset.pypi-dependencies]
 huggingface-hub = { version = ">=0.35.3, <0.36", extras = ["cli"] }
+datasets = ">=4.2.0, <5"
+pillow = ">=11.3.0, <12"
 
 [feature.dataset.tasks]
 
@@ -45,7 +47,7 @@ cmd = "hf auth login --token $HF_TOKEN"
 description = "Log in to Hugging Face using the provided token"
 
 [feature.dataset.tasks.get-dataset]
-cmd = "hf download --repo-type dataset --local-dir dataset ylecun/mnist"
+cmd = "hf download --repo-type dataset --local-dir dataset ylecun/raw/mnist"
 description = "Download the MNIST dataset from Hugging Face"
 
 [environments]

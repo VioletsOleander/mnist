@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
 
     auto dataset = mnist::data::MNISTDataset(config.dataset_path, config.mode);
 
-    dataset.print();
+    dataset.print(true);
 
     return 0;
 }

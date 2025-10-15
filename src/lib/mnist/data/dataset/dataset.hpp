@@ -16,11 +16,11 @@ class Array;
 
 namespace mnist::data {
 
-namespace detail {
+namespace internal {
 
 class MNISTRawDataset;
 
-} // namespace detail
+} // namespace internal
 
 class MNISTDataset : public torch::data::Dataset<MNISTDataset> {
   public:
@@ -34,13 +34,13 @@ class MNISTDataset : public torch::data::Dataset<MNISTDataset> {
 
     torch::optional<size_t> size() const override;
 
-    void print() const;
+    void print(bool verbose = false) const;
 
   private:
     torch::Tensor image_tensor_;
     torch::Tensor label_tensor_;
 
-    std::unique_ptr<detail::MNISTRawDataset> raw_dataset_;
+    std::unique_ptr<internal::MNISTRawDataset> raw_dataset_;
 };
 
 } // namespace mnist::data

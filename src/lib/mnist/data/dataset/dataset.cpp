@@ -17,24 +17,24 @@ namespace utils = mnist::utils;
 
 /// Declaration of class MNISTRawDataset
 
-namespace mnist::data::detail {
+namespace mnist::data::internal {
 
 class MNISTRawDataset {
   public:
     explicit MNISTRawDataset(const fs::path &dataset_path,
                              const utils::Mode &mode);
-    void print() const;
+    void print(bool verbose) const;
 
   private:
     std::shared_ptr<arrow::Array> image_array_;
     std::shared_ptr<arrow::Array> label_array_;
 };
 
-} // namespace mnist::data::detail
+} // namespace mnist::data::internal
 
 /// Implementation of class MNISTRawDataset
 
-namespace mnist::data::detail {
+namespace mnist::data::internal {
 
 // Get train and test parquet file paths from the dataset directory
 std::map<utils::Mode, fs::path>
@@ -92,14 +92,61 @@ MNISTRawDataset::MNISTRawDataset(const fs::path &dataset_path,
            "Image array type must be BINARY");
     assert(label_array_->type_id() == arrow::Type::INT64 &&
            "Label array type must be INT64");
+
+    auto image_array_data = image_array_->data();
+    auto label_array_data = label_array_->data();
 }
 
-void MNISTRawDataset::print() const {
-    std::cout << "Image array length: " << image_array_->length() << "\n";
-    std::cout << "Label array length: " << label_array_->length() << "\n";
+void MNISTRawDataset::print(bool verbose) const {
+    std::cout << "Image array:\n"
+              << "length: " << image_array_->length() << "\n"
+              << "type: " << image_array_->type()->ToString()
+              << ", with id: " << image_array_->type()->id()
+              << ", with byte width: " << image_array_->type()->byte_width()
+              << ", with bit width: " << image_array_->type()->bit_width()
+              << "\n";
+    std::cout << "\nLabel array:\n"
+              << "length: " << label_array_->length() << "\n"
+              << "type: " << label_array_->type()->ToString()
+              << ", with id: " << label_array_->type()->id()
+              << ", with byte width: " << label_array_->type()->byte_width()
+              << ", with bit width: " << label_array_->type()->bit_width()
+              << "\n";
+
+    if (verbose) {
+        auto image_array_buffers = image_array_->data()->buffers;
+        auto label_array_buffers = label_array_->data()->buffers;
+
+        std::cout << "\nImage array buffers:\n"
+                  << "length: " << image_array_buffers.size() << "\n";
+        std::cout << "\nLabel array buffers:\n"
+                  << "length: " << label_array_buffers.size() << "\n";
+
+        for (size_t i = 0; i < image_array_buffers.size(); i++) {
+            if (image_array_buffers[i]) {
+                std::cout << "\nImage array buffer " << i << ":\n"
+                          << "size: " << image_array_buffers[i]->size() << "\n"
+                          << "capacity: " << image_array_buffers[i]->capacity()
+                          << "\n";
+            } else {
+                std::cout << "\nImage array buffer " << i << " is null.\n";
+            }
+        }
+
+        for (size_t i = 0; i < label_array_buffers.size(); i++) {
+            if (label_array_buffers[i]) {
+                std::cout << "\nLabel array buffer " << i << ":\n"
+                          << "size: " << label_array_buffers[i]->size() << "\n"
+                          << "capacity: " << label_array_buffers[i]->capacity()
+                          << "\n";
+            } else {
+                std::cout << "\nLabel array buffer " << i << " is null.\n";
+            }
+        }
+    }
 }
 
-} // namespace mnist::data::detail
+} // namespace mnist::data::internal
 
 /// Implementation of class MNISTDataset
 
@@ -108,7 +155,7 @@ namespace mnist::data {
 MNISTDataset::MNISTDataset(const std::filesystem::path &dataset_path,
                            const mnist::utils::Mode &mode) {
     raw_dataset_ =
-        std::make_unique<detail::MNISTRawDataset>(dataset_path, mode);
+        std::make_unique<internal::MNISTRawDataset>(dataset_path, mode);
 }
 
 torch::data::Example<torch::Tensor, torch::Tensor>
@@ -120,7 +167,7 @@ torch::optional<size_t> MNISTDataset::size() const {
     throw std::runtime_error("Not implemented yet");
 }
 
-void MNISTDataset::print() const { raw_dataset_->print(); }
+void MNISTDataset::print(bool verbose) const { raw_dataset_->print(verbose); }
 
 MNISTDataset::~MNISTDataset() = default;
 
