@@ -9,6 +9,8 @@ from typing import cast
 from datasets import DatasetDict, load_dataset
 from PIL.Image import Image
 
+IMAGE_SIZE = 28 * 28  # Each MNIST image is 28x28 pixels
+
 
 def read_dataset(input_path: Path) -> DatasetDict:
     dataset = load_dataset(input_path.as_posix())
@@ -18,7 +20,7 @@ def read_dataset(input_path: Path) -> DatasetDict:
     return dataset
 
 
-def write_dataset(iterator, image_path, label_path) -> None:
+def write_dataset(iterator, image_path: Path, label_path: Path) -> None:
     image_path.parent.mkdir(parents=True, exist_ok=True)
 
     with image_path.open("wb") as f_image, label_path.open("w") as f_label:
@@ -35,8 +37,8 @@ def check_file_sizes(image_path: Path, label_path: Path, example_number: int) ->
         image_data = f_image.read()
 
         assert (
-            len(image_data) == example_number * 28 * 28
-        ), f"Image file size does not match expected size. Expected {example_number * 28 * 28}, got {len(image_data)}"
+            len(image_data) == example_number * IMAGE_SIZE
+        ), f"Image file size does not match expected size. Expected {example_number * IMAGE_SIZE}, got {len(image_data)}"
 
     with label_path.open("r") as f_label:
         labels = f_label.readlines()
@@ -72,7 +74,7 @@ def process(dataset: DatasetDict, mode: str, project_root: Path) -> None:
 
 
 if __name__ == "__main__":
-    project_root = Path.cwd().parent.resolve()
+    project_root = Path(__file__).parent.parent.resolve()
     mnist_dataset = read_dataset(project_root / "dataset" / "raw" / "mnist")
 
     process(mnist_dataset, "train", project_root)
