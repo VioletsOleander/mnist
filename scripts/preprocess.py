@@ -56,7 +56,7 @@ def process(dataset: DatasetDict, mode: str, project_root: Path) -> None:
     example_number = len(dataset[mode])
 
     write_dataset(
-        iter(mnist_dataset[mode]),
+        iter(dataset[mode]),
         image_path,
         label_path,
     )
