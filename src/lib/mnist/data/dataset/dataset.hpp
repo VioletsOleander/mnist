@@ -32,7 +32,7 @@ class MNISTDataset : public torch::data::Dataset<MNISTDataset> {
     torch::data::Example<torch::Tensor, torch::Tensor>
     get(size_t index) override;
 
-    torch::optional<size_t> size() const override;
+    torch::optional<size_t> size() const ov]erride;
 
     void print(bool verbose = false) const;
 
