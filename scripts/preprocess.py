@@ -4,7 +4,7 @@
 # This script handles the reading and storing of the MNIST dataset to a specified directory.
 
 from pathlib import Path
-from typing import cast
+from typing import Iterator, cast
 
 from datasets import DatasetDict, load_dataset
 from PIL.Image import Image
@@ -20,7 +20,7 @@ def read_dataset(input_path: Path) -> DatasetDict:
     return dataset
 
 
-def write_dataset(iterator, image_path: Path, label_path: Path) -> None:
+def write_dataset(iterator: Iterator, image_path: Path, label_path: Path) -> None:
     image_path.parent.mkdir(parents=True, exist_ok=True)
 
     with image_path.open("wb") as f_image, label_path.open("w") as f_label:
@@ -49,7 +49,8 @@ def check_file_sizes(image_path: Path, label_path: Path, example_number: int) ->
 
 
 def process(dataset: DatasetDict, mode: str, project_root: Path) -> None:
-    assert mode in ["train", "test"], "Mode must be 'train' or 'test'"
+    if mode not in ["train", "test"]:
+        raise ValueError("Mode must be 'train' or 'test'")
 
     print(f"Processing {mode} dataset...")
 
