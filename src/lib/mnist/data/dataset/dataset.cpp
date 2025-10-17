@@ -38,6 +38,8 @@ class MNISTRawDataset {
 
     std::vector<uint8_t> image_buffer_;
     std::vector<uint8_t> label_buffer_;
+
+    mnist::utils::Mode mode_;
 };
 
 } // namespace mnist::data::internal
@@ -123,8 +125,7 @@ torch::Tensor MNISTRawDataset::construct_label_tensor() const {
 size_t MNISTRawDataset::get_num_samples() const { return num_images_; }
 
 void MNISTRawDataset::print(bool verbose) const {
-    std::cout << "Mode: " << utils::mode_to_string(mnist::utils::Mode::TRAIN)
-              << "\n";
+    std::cout << "Mode: " << utils::mode_to_string(mode_) << "\n";
     std::cout << "Number of samples: " << num_images_ << "\n";
     std::cout << "Image buffer size: " << image_buffer_.size() << " bytes\n";
     std::cout << "Label buffer size: " << label_buffer_.size() << " bytes\n";
@@ -151,9 +152,7 @@ MNISTDataset::get(size_t index) {
     throw std::runtime_error("Not implemented yet");
 }
 
-torch::optional<size_t> MNISTDataset::size() const {
-    throw std::runtime_error("Not implemented yet");
-}
+torch::optional<size_t> MNISTDataset::size() const { return num_samples_; }
 
 void MNISTDataset::print(bool verbose) const {
     std::cout << "MNIST Dataset Info:\n";
