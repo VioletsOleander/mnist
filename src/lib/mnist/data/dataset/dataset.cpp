@@ -1,9 +1,6 @@
-#include <ATen/core/TensorBody.h>
 #include <filesystem>
 #include <fstream>
-#include <ios>
 #include <memory>
-#include <torch/types.h>
 #include <utility>
 
 #include <torch/torch.h>
@@ -96,14 +93,16 @@ MNISTRawDataset::MNISTRawDataset(const fs::path &dataset_path,
 
 torch::Tensor MNISTRawDataset::construct_image_tensor() const {
     torch::TensorOptions options =
-        torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCPU);
+        torch::TensorOptions().dtype(torch::kUInt8).device(torch::kCPU);
     torch::Tensor image_tensor =
         torch::from_blob((void *)image_buffer_.data(),
                          {static_cast<int64_t>(num_images_), 1,
                           static_cast<int64_t>(MNIST_IMAGE_HEIGHT),
                           static_cast<int64_t>(MNIST_IMAGE_WIDTH)},
                          options)
-            .clone();          // clone to own the memory
+            .clone()              // clone to own the memory
+            .to(torch::kFloat32); // convert to float32
+
     image_tensor.div_(255.0f); // normalize to [0, 1]
 
     return image_tensor;
