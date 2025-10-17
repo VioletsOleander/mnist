@@ -44,8 +44,15 @@ cmd = "hf auth login --token $HF_TOKEN"
 description = "Log in to Hugging Face using the provided token"
 
 [feature.dataset.tasks.get-dataset]
-cmd = "hf download --repo-type dataset --local-dir dataset ylecun/mnist"
+cmd = "hf download --repo-type dataset --local-dir dataset/raw ylecun/mnist"
 description = "Download the MNIST dataset from Hugging Face"
+outputs = ["dataset/raw/mnist/*.parquet", "dataset/raw/.gitattributes", "dataset/raw/README.md"]
+
+[feature.dataset.tasks.process-dataset]
+cmd = "python scripts/preprocess.py"
+description = "Converts the Parquet dataset to raw binary images and text labels."
+depends-on = ["get-dataset"]
+outputs = ["dataset/processed/*"]
 
 [environments]
 dataset = { features = ["dataset"], no-default-feature = true }
