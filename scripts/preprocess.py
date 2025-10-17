@@ -38,7 +38,7 @@ def check_file_sizes(image_path: Path, label_path: Path, example_number: int) ->
     image_file_size = image_path.stat().st_size
     assert (
         image_file_size == example_number * IMAGE_SIZE
-    ), f"Image file size does not match expected size. Expected {example_number * IMAGE_SIZE}, got {len(image_data)}"
+    ), f"Image file size does not match expected size. Expected {example_number * IMAGE_SIZE}, got {image_file_size}"
 
     with label_path.open("r") as f_label:
         labels = f_label.readlines()

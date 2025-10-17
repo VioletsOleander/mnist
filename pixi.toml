@@ -53,6 +53,7 @@ outputs = ["dataset/raw/mnist/*.parquet", "dataset/raw/.gitattributes", "dataset
 cmd = "python scripts/preprocess.py"
 description = "Converts the Parquet dataset to raw binary images and text labels."
 depends-on = ["get-dataset"]
+inputs = ["scripts/preprocess.py"]
 outputs = ["dataset/processed/*"]
 
 [environments]
