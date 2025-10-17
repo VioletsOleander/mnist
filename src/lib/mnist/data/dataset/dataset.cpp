@@ -1,19 +1,20 @@
-#include <algorithm>
+#include <ATen/core/TensorBody.h>
 #include <filesystem>
-#include <map>
+#include <fstream>
+#include <ios>
 #include <memory>
+#include <utility>
 
-#include <arrow/api.h>
-#include <arrow/io/api.h>
-#include <opencv4/opencv2/core.hpp>
-#include <opencv4/opencv2/imgcodecs.hpp>
-#include <parquet/arrow/reader.h>
+#include <torch/torch.h>
 
 #include "dataset.hpp"
 #include "mnist/utils/utils.hpp"
 
+constexpr size_t MNIST_IMAGE_WIDTH = 28;
+constexpr size_t MNIST_IMAGE_HEIGHT = 28;
+constexpr size_t MNIST_IMAGE_SIZE = MNIST_IMAGE_WIDTH * MNIST_IMAGE_HEIGHT;
+
 namespace fs = std::filesystem;
-namespace utils = mnist::utils;
 
 /// Declaration of class MNISTRawDataset
 
@@ -22,12 +23,21 @@ namespace mnist::data::internal {
 class MNISTRawDataset {
   public:
     explicit MNISTRawDataset(const fs::path &dataset_path,
-                             const utils::Mode &mode);
+                             const mnist::utils::Mode &mode);
+
+    torch::Tensor construct_image_tensor() const;
+    torch::Tensor construct_label_tensor() const;
+
+    size_t get_num_samples() const;
+
     void print(bool verbose) const;
 
   private:
-    std::shared_ptr<arrow::Array> image_array_;
-    std::shared_ptr<arrow::Array> label_array_;
+    size_t num_images_;
+    size_t num_labels_;
+
+    std::vector<uint8_t> image_buffer_;
+    std::vector<uint8_t> label_buffer_;
 };
 
 } // namespace mnist::data::internal
@@ -36,114 +46,88 @@ class MNISTRawDataset {
 
 namespace mnist::data::internal {
 
-// Get train and test parquet file paths from the dataset directory
-std::map<utils::Mode, fs::path>
-get_parquet_file_paths(const fs::path &dataset_path) {
-    std::map<utils::Mode, fs::path> file_paths;
-    for (const auto &entry : fs::directory_iterator(dataset_path)) {
-        if (entry.path().extension() == ".parquet") {
-            auto filename = entry.path().filename().string();
-            if (filename.find("train", 0) == 0) {
-                file_paths[utils::Mode::TRAIN] = entry.path();
-            } else if (filename.find("test", 0) == 0) {
-                file_paths[utils::Mode::TEST] = entry.path();
-            }
+std::pair<fs::path, fs::path> get_file_paths(const fs::path &dataset_path,
+                                             const mnist::utils::Mode &mode) {
+    std::pair<fs::path, fs::path> file_paths{fs::path(), fs::path()};
+    std::string mode_str{mnist::utils::mode_to_string(mode)};
+
+    for (const auto &entry : fs::directory_iterator(dataset_path / mode_str)) {
+        if (entry.path().extension() == ".bin") {
+            file_paths.first = entry.path();
+        } else if (entry.path().extension() == ".txt") {
+            file_paths.second = entry.path();
         }
     }
+
     return file_paths;
 }
 
-// Read a parquet file and return an arrow table
-std::shared_ptr<arrow::Table> read_parquet(const std::string &file_path) {
-    std::shared_ptr<arrow::io::ReadableFile> infile;
-    PARQUET_ASSIGN_OR_THROW(infile, arrow::io::ReadableFile::Open(file_path));
-
-    std::unique_ptr<parquet::arrow::FileReader> reader;
-    PARQUET_ASSIGN_OR_THROW(
-        reader, parquet::arrow::OpenFile(infile, arrow::default_memory_pool()));
-
-    std::shared_ptr<arrow::Table> table;
-    PARQUET_THROW_NOT_OK(reader->ReadTable(&table));
-    return table;
-}
-
 MNISTRawDataset::MNISTRawDataset(const fs::path &dataset_path,
-                                 const utils::Mode &mode) {
-    auto file_paths = get_parquet_file_paths(dataset_path);
-    auto table = read_parquet(file_paths[mode]);
+                                 const mnist::utils::Mode &mode)
+    : num_images_(0), num_labels_(0) {
+    auto file_paths = get_file_paths(dataset_path, mode);
 
-    auto image_column = table->GetColumnByName("image");
-    auto label_column = table->GetColumnByName("label");
-    if (!image_column || !label_column) {
-        throw std::runtime_error(
-            "Parquet file must contain 'image' and 'label' columns.");
+    std::ifstream image_file(file_paths.first, std::ios::binary);
+
+    image_file.seekg(0, std::ios::end);
+    size_t file_size = image_file.tellg();
+    image_file.seekg(0, std::ios::beg);
+
+    assert(file_size % MNIST_IMAGE_SIZE == 0 &&
+           "Corrupted MNIST image file detected");
+
+    num_images_ = file_size / MNIST_IMAGE_SIZE;
+
+    image_buffer_.resize(file_size);
+    image_file.read(reinterpret_cast<char *>(image_buffer_.data()), file_size);
+    image_file.close();
+
+    // TODO: optimize label loading
+    std::ifstream label_file(file_paths.second, std::ios::in);
+
+    label_buffer_.reserve(num_images_);
+    for (std::string line; std::getline(label_file, line);) {
+        num_labels_++;
+        label_buffer_.emplace_back(static_cast<uint8_t>(std::stoi(line)));
     }
 
-    auto result = image_column->Flatten();
-    if (!result.ok()) {
-        throw std::runtime_error("Error flattening image column: " +
-                                 result.status().ToString());
-    }
-
-    // image and label ChunkedArray are assumed to have only one chunk
-    image_array_ = result.ValueOrDie()[0]->chunk(0);
-    label_array_ = label_column->chunk(0);
-    assert(image_array_->type_id() == arrow::Type::BINARY &&
-           "Image array type must be BINARY");
-    assert(label_array_->type_id() == arrow::Type::INT64 &&
-           "Label array type must be INT64");
-
-    auto image_array_data = image_array_->data();
-    auto label_array_data = label_array_->data();
+    assert(num_images_ == num_labels_ &&
+           "Number of images and labels do not match");
 }
+
+torch::Tensor MNISTRawDataset::construct_image_tensor() const {
+    torch::TensorOptions options =
+        torch::TensorOptions().dtype(torch::kUInt8).device(torch::kCPU);
+    torch::Tensor image_tensor =
+        torch::from_blob((void *)image_buffer_.data(),
+                         {static_cast<int64_t>(num_images_), 1,
+                          static_cast<int64_t>(MNIST_IMAGE_HEIGHT),
+                          static_cast<int64_t>(MNIST_IMAGE_WIDTH)},
+                         options)
+            .clone(); // clone to own the memory
+
+    return image_tensor;
+}
+
+torch::Tensor MNISTRawDataset::construct_label_tensor() const {
+    torch::TensorOptions options =
+        torch::TensorOptions().dtype(torch::kUInt8).device(torch::kCPU);
+    torch::Tensor label_tensor =
+        torch::from_blob((void *)label_buffer_.data(),
+                         {static_cast<int64_t>(num_labels_)}, options)
+            .clone(); // clone to own the memory
+
+    return label_tensor;
+}
+
+size_t MNISTRawDataset::get_num_samples() const { return num_images_; }
 
 void MNISTRawDataset::print(bool verbose) const {
-    std::cout << "Image array:\n"
-              << "length: " << image_array_->length() << "\n"
-              << "type: " << image_array_->type()->ToString()
-              << ", with id: " << image_array_->type()->id()
-              << ", with byte width: " << image_array_->type()->byte_width()
-              << ", with bit width: " << image_array_->type()->bit_width()
+    std::cout << "Mode: " << utils::mode_to_string(mnist::utils::Mode::TRAIN)
               << "\n";
-    std::cout << "\nLabel array:\n"
-              << "length: " << label_array_->length() << "\n"
-              << "type: " << label_array_->type()->ToString()
-              << ", with id: " << label_array_->type()->id()
-              << ", with byte width: " << label_array_->type()->byte_width()
-              << ", with bit width: " << label_array_->type()->bit_width()
-              << "\n";
-
-    if (verbose) {
-        auto image_array_buffers = image_array_->data()->buffers;
-        auto label_array_buffers = label_array_->data()->buffers;
-
-        std::cout << "\nImage array buffers:\n"
-                  << "length: " << image_array_buffers.size() << "\n";
-        std::cout << "\nLabel array buffers:\n"
-                  << "length: " << label_array_buffers.size() << "\n";
-
-        for (size_t i = 0; i < image_array_buffers.size(); i++) {
-            if (image_array_buffers[i]) {
-                std::cout << "\nImage array buffer " << i << ":\n"
-                          << "size: " << image_array_buffers[i]->size() << "\n"
-                          << "capacity: " << image_array_buffers[i]->capacity()
-                          << "\n";
-            } else {
-                std::cout << "\nImage array buffer " << i << " is null.\n";
-            }
-        }
-
-        for (size_t i = 0; i < label_array_buffers.size(); i++) {
-            if (label_array_buffers[i]) {
-                std::cout << "\nLabel array buffer " << i << ":\n"
-                          << "size: " << label_array_buffers[i]->size() << "\n"
-                          << "capacity: " << label_array_buffers[i]->capacity()
-                          << "\n";
-            } else {
-                std::cout << "\nLabel array buffer " << i << " is null.\n";
-            }
-        }
-    }
+    std::cout << "Number of samples: " << num_images_ << "\n";
+    std::cout << "Image buffer size: " << image_buffer_.size() << " bytes\n";
+    std::cout << "Label buffer size: " << label_buffer_.size() << " bytes\n";
 }
 
 } // namespace mnist::data::internal
@@ -156,6 +140,10 @@ MNISTDataset::MNISTDataset(const std::filesystem::path &dataset_path,
                            const mnist::utils::Mode &mode) {
     raw_dataset_ =
         std::make_unique<internal::MNISTRawDataset>(dataset_path, mode);
+
+    image_tensor_ = raw_dataset_->construct_image_tensor();
+    label_tensor_ = raw_dataset_->construct_label_tensor();
+    num_samples_ = raw_dataset_->get_num_samples();
 }
 
 torch::data::Example<torch::Tensor, torch::Tensor>
@@ -167,7 +155,14 @@ torch::optional<size_t> MNISTDataset::size() const {
     throw std::runtime_error("Not implemented yet");
 }
 
-void MNISTDataset::print(bool verbose) const { raw_dataset_->print(verbose); }
+void MNISTDataset::print(bool verbose) const {
+    std::cout << "MNIST Dataset Info:\n";
+    raw_dataset_->print(verbose);
+    std::cout << "Image Tensor: ";
+    image_tensor_.print();
+    std::cout << "Label Tensor: ";
+    label_tensor_.print();
+}
 
 MNISTDataset::~MNISTDataset() = default;
 

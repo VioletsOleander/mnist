@@ -8,6 +8,17 @@
 
 namespace mnist::utils {
 
+std::string mode_to_string(Mode mode) {
+    switch (mode) {
+    case Mode::TRAIN:
+        return "train";
+    case Mode::TEST:
+        return "test";
+    default:
+        return "unknown";
+    }
+}
+
 int parse_args(Config &config, CLI::App &app, int argc, char *argv[]) {
     std::string config_path;
     app.add_option("config_path", config_path, "Path to the configuration file")

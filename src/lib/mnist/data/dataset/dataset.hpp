@@ -5,14 +5,11 @@
 
 #include <torch/torch.h>
 
-#include "mnist/utils/utils.hpp"
+namespace mnist::utils {
 
-namespace arrow {
+enum class Mode;
 
-class Table;
-class Array;
-
-} // namespace arrow
+}
 
 namespace mnist::data {
 
@@ -24,15 +21,14 @@ class MNISTRawDataset;
 
 class MNISTDataset : public torch::data::Dataset<MNISTDataset> {
   public:
-    explicit MNISTDataset(
-        const std::filesystem::path &dataset_path,
-        const mnist::utils::Mode &mode = mnist::utils::Mode::TRAIN);
+    explicit MNISTDataset(const std::filesystem::path &dataset_path,
+                          const mnist::utils::Mode &mode);
     ~MNISTDataset() override;
 
     torch::data::Example<torch::Tensor, torch::Tensor>
     get(size_t index) override;
 
-    torch::optional<size_t> size() const ov]erride;
+    torch::optional<size_t> size() const override;
 
     void print(bool verbose = false) const;
 
@@ -40,6 +36,7 @@ class MNISTDataset : public torch::data::Dataset<MNISTDataset> {
     torch::Tensor image_tensor_;
     torch::Tensor label_tensor_;
 
+    size_t num_samples_;
     std::unique_ptr<internal::MNISTRawDataset> raw_dataset_;
 };
 
