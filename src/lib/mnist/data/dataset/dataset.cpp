@@ -3,6 +3,7 @@
 #include <fstream>
 #include <ios>
 #include <memory>
+#include <torch/types.h>
 #include <utility>
 
 #include <torch/torch.h>
@@ -50,18 +51,10 @@ namespace mnist::data::internal {
 
 std::pair<fs::path, fs::path> get_file_paths(const fs::path &dataset_path,
                                              const mnist::utils::Mode &mode) {
-    std::pair<fs::path, fs::path> file_paths{fs::path(), fs::path()};
     std::string mode_str{mnist::utils::mode_to_string(mode)};
 
-    for (const auto &entry : fs::directory_iterator(dataset_path / mode_str)) {
-        if (entry.path().extension() == ".bin") {
-            file_paths.first = entry.path();
-        } else if (entry.path().extension() == ".txt") {
-            file_paths.second = entry.path();
-        }
-    }
-
-    return file_paths;
+    return {dataset_path / mode_str / "images.bin",
+            dataset_path / mode_str / "labels.txt"};
 }
 
 MNISTRawDataset::MNISTRawDataset(const fs::path &dataset_path,
@@ -70,6 +63,10 @@ MNISTRawDataset::MNISTRawDataset(const fs::path &dataset_path,
     auto file_paths = get_file_paths(dataset_path, mode);
 
     std::ifstream image_file(file_paths.first, std::ios::binary);
+    if (!image_file.is_open()) {
+        throw std::runtime_error("Failed to open image file: " +
+                                 file_paths.first.string());
+    }
 
     image_file.seekg(0, std::ios::end);
     size_t file_size = image_file.tellg();
@@ -99,14 +96,15 @@ MNISTRawDataset::MNISTRawDataset(const fs::path &dataset_path,
 
 torch::Tensor MNISTRawDataset::construct_image_tensor() const {
     torch::TensorOptions options =
-        torch::TensorOptions().dtype(torch::kUInt8).device(torch::kCPU);
+        torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCPU);
     torch::Tensor image_tensor =
         torch::from_blob((void *)image_buffer_.data(),
                          {static_cast<int64_t>(num_images_), 1,
                           static_cast<int64_t>(MNIST_IMAGE_HEIGHT),
                           static_cast<int64_t>(MNIST_IMAGE_WIDTH)},
                          options)
-            .clone(); // clone to own the memory
+            .clone();          // clone to own the memory
+    image_tensor.div_(255.0f); // normalize to [0, 1]
 
     return image_tensor;
 }
