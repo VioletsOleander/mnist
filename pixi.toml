@@ -27,7 +27,6 @@ ninja = ">=1.13.1,<2"
 clangxx = ">=21.1.2,<22"
 lld = ">=21.1.3,<22"
 libcxx-devel = ">=21.1.3,<22"
-libarrow-all = ">=21.0.0,<22"
 tomlplusplus = ">=3.3.0,<4"
 cli11 = ">=2.5.0,<3"
 
@@ -36,6 +35,8 @@ python = "*"
 
 [feature.dataset.pypi-dependencies]
 huggingface-hub = { version = ">=0.35.3, <0.36", extras = ["cli"] }
+datasets = ">=4.2.0, <5"
+pillow = ">=11.3.0, <12"
 
 [feature.dataset.tasks]
 
