@@ -1,10 +1,13 @@
+#include <algorithm>
 #include <filesystem>
+#include <map>
+#include <memory>
 
 #include <arrow/api.h>
 #include <arrow/io/api.h>
+#include <opencv4/opencv2/core.hpp>
+#include <opencv4/opencv2/imgcodecs.hpp>
 #include <parquet/arrow/reader.h>
-#include <parquet/arrow/writer.h>
-#include <torch/torch.h>
 
 #include "dataset.hpp"
 #include "mnist/utils/utils.hpp"
@@ -12,10 +15,28 @@
 namespace fs = std::filesystem;
 namespace utils = mnist::utils;
 
-namespace {
+/// Declaration of class MNISTRawDataset
 
-// Helper function to get train and test parquet file paths from the dataset
-// directory
+namespace mnist::data::internal {
+
+class MNISTRawDataset {
+  public:
+    explicit MNISTRawDataset(const fs::path &dataset_path,
+                             const utils::Mode &mode);
+    void print(bool verbose) const;
+
+  private:
+    std::shared_ptr<arrow::Array> image_array_;
+    std::shared_ptr<arrow::Array> label_array_;
+};
+
+} // namespace mnist::data::internal
+
+/// Implementation of class MNISTRawDataset
+
+namespace mnist::data::internal {
+
+// Get train and test parquet file paths from the dataset directory
 std::map<utils::Mode, fs::path>
 get_parquet_file_paths(const fs::path &dataset_path) {
     std::map<utils::Mode, fs::path> file_paths;
@@ -32,7 +53,7 @@ get_parquet_file_paths(const fs::path &dataset_path) {
     return file_paths;
 }
 
-// Helper function to read a Parquet file and return an Arrow Table
+// Read a parquet file and return an arrow table
 std::shared_ptr<arrow::Table> read_parquet(const std::string &file_path) {
     std::shared_ptr<arrow::io::ReadableFile> infile;
     PARQUET_ASSIGN_OR_THROW(infile, arrow::io::ReadableFile::Open(file_path));
@@ -46,86 +67,108 @@ std::shared_ptr<arrow::Table> read_parquet(const std::string &file_path) {
     return table;
 }
 
-} // namespace
+MNISTRawDataset::MNISTRawDataset(const fs::path &dataset_path,
+                                 const utils::Mode &mode) {
+    auto file_paths = get_parquet_file_paths(dataset_path);
+    auto table = read_parquet(file_paths[mode]);
+
+    auto image_column = table->GetColumnByName("image");
+    auto label_column = table->GetColumnByName("label");
+    if (!image_column || !label_column) {
+        throw std::runtime_error(
+            "Parquet file must contain 'image' and 'label' columns.");
+    }
+
+    auto result = image_column->Flatten();
+    if (!result.ok()) {
+        throw std::runtime_error("Error flattening image column: " +
+                                 result.status().ToString());
+    }
+
+    // image and label ChunkedArray are assumed to have only one chunk
+    image_array_ = result.ValueOrDie()[0]->chunk(0);
+    label_array_ = label_column->chunk(0);
+    assert(image_array_->type_id() == arrow::Type::BINARY &&
+           "Image array type must be BINARY");
+    assert(label_array_->type_id() == arrow::Type::INT64 &&
+           "Label array type must be INT64");
+
+    auto image_array_data = image_array_->data();
+    auto label_array_data = label_array_->data();
+}
+
+void MNISTRawDataset::print(bool verbose) const {
+    std::cout << "Image array:\n"
+              << "length: " << image_array_->length() << "\n"
+              << "type: " << image_array_->type()->ToString()
+              << ", with id: " << image_array_->type()->id()
+              << ", with byte width: " << image_array_->type()->byte_width()
+              << ", with bit width: " << image_array_->type()->bit_width()
+              << "\n";
+    std::cout << "\nLabel array:\n"
+              << "length: " << label_array_->length() << "\n"
+              << "type: " << label_array_->type()->ToString()
+              << ", with id: " << label_array_->type()->id()
+              << ", with byte width: " << label_array_->type()->byte_width()
+              << ", with bit width: " << label_array_->type()->bit_width()
+              << "\n";
+
+    if (verbose) {
+        auto image_array_buffers = image_array_->data()->buffers;
+        auto label_array_buffers = label_array_->data()->buffers;
+
+        std::cout << "\nImage array buffers:\n"
+                  << "length: " << image_array_buffers.size() << "\n";
+        std::cout << "\nLabel array buffers:\n"
+                  << "length: " << label_array_buffers.size() << "\n";
+
+        for (size_t i = 0; i < image_array_buffers.size(); i++) {
+            if (image_array_buffers[i]) {
+                std::cout << "\nImage array buffer " << i << ":\n"
+                          << "size: " << image_array_buffers[i]->size() << "\n"
+                          << "capacity: " << image_array_buffers[i]->capacity()
+                          << "\n";
+            } else {
+                std::cout << "\nImage array buffer " << i << " is null.\n";
+            }
+        }
+
+        for (size_t i = 0; i < label_array_buffers.size(); i++) {
+            if (label_array_buffers[i]) {
+                std::cout << "\nLabel array buffer " << i << ":\n"
+                          << "size: " << label_array_buffers[i]->size() << "\n"
+                          << "capacity: " << label_array_buffers[i]->capacity()
+                          << "\n";
+            } else {
+                std::cout << "\nLabel array buffer " << i << " is null.\n";
+            }
+        }
+    }
+}
+
+} // namespace mnist::data::internal
+
+/// Implementation of class MNISTDataset
 
 namespace mnist::data {
 
-MNISTDataset::MNISTDataset(const fs::path &dataset_path,
-                           const utils::Mode &mode) {
-    auto file_paths = get_parquet_file_paths(dataset_path);
-
-    table_ = read_parquet(file_paths[mode]);
-
-    //     // Extract image and label columns
-    //     auto image_column = table->GetColumnByName("image");
-    //     auto label_column = table->GetColumnByName("label");
-
-    //     if (!image_column || !label_column) {
-    //         throw std::runtime_error(
-    //             "Parquet file must contain 'image' and 'label' columns.");
-    //     }
-
-    //     // Process images
-    //     auto image_chunks = image_column->chunks();
-    //     std::vector<uint8_t> image_data;
-    //     long num_rows = table->num_rows();
-
-    //     // Assuming images are stored as structs of bytes
-    //     for (const auto &chunk : image_chunks) {
-    //         auto struct_array =
-    //         std::static_pointer_cast<arrow::StructArray>(chunk); auto
-    //         byte_array_ptr = struct_array->GetFieldByName("bytes"); auto
-    //         byte_array =
-    //             std::static_pointer_cast<arrow::BinaryArray>(byte_array_ptr);
-
-    //         for (int64_t i = 0; i < byte_array->length(); ++i) {
-    //             auto value = byte_array->Value(i);
-    //             image_data.insert(image_data.end(), value.begin(),
-    //             value.end());
-    //         }
-    //     }
-
-    //     images_ =
-    //         torch::from_blob(image_data.data(), {num_rows, 1, 28, 28},
-    //         torch::kU8)
-    //             .clone();
-    //     images_ = images_.to(torch::kFloat32).div(255.0);
-
-    //     // Process labels
-    //     auto label_chunks = label_column->chunks();
-    //     std::vector<int64_t> label_data;
-    //     for (const auto &chunk : label_chunks) {
-    //         auto int_array =
-    //         std::static_pointer_cast<arrow::Int64Array>(chunk); for (int64_t
-    //         i = 0; i < int_array->length(); ++i) {
-    //             label_data.push_back(int_array->Value(i));
-    //         }
-    //     }
-
-    //     labels_ = torch::from_blob(label_data.data(),
-    //     {(long)label_data.size()},
-    //                                torch::kInt64)
-    //                   .clone();
-    // }
-
-    // torch::data::Example<torch::Tensor, torch::Tensor>
-    // MNISTDataset::get(size_t index) {
-    //     return {images_[index], labels_[index]};
-    // }
-
-    // torch::optional<size_t> MNISTDataset::size() const { return
-    // images_.size(0); }
+MNISTDataset::MNISTDataset(const std::filesystem::path &dataset_path,
+                           const mnist::utils::Mode &mode) {
+    raw_dataset_ =
+        std::make_unique<internal::MNISTRawDataset>(dataset_path, mode);
 }
 
 torch::data::Example<torch::Tensor, torch::Tensor>
 MNISTDataset::get(size_t index) {
-    return {images_[index], labels_[index]};
+    throw std::runtime_error("Not implemented yet");
 }
 
-torch::optional<size_t> MNISTDataset::size() const { return images_.size(0); }
-
-std::string MNISTDataset::schema() const {
-    return table_->schema()->ToString(true);
+torch::optional<size_t> MNISTDataset::size() const {
+    throw std::runtime_error("Not implemented yet");
 }
+
+void MNISTDataset::print(bool verbose) const { raw_dataset_->print(verbose); }
+
+MNISTDataset::~MNISTDataset() = default;
 
 } // namespace mnist::data

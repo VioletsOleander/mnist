@@ -31,7 +31,7 @@ int parse_args(Config &config, CLI::App &app, int argc, char *argv[]) {
     try {
         tbl = toml::parse_file(config_path);
     } catch (const toml::parse_error &err) {
-        std::cerr << "Parsing failed: " << err << std::endl;
+        std::cerr << "Parsing failed: " << err << "\n";
         return 1;
     }
 
@@ -39,20 +39,17 @@ int parse_args(Config &config, CLI::App &app, int argc, char *argv[]) {
     if (dataset_path.empty()) {
         std::cerr
             << "Parsing error: dataset_path is required in the config file "
-               "and should be a valid string"
-            << std::endl;
+               "and should be a valid string\n";
         return 1;
     }
 
     std::string mode = tbl["mode"].value_or<std::string>("");
     if (mode.empty()) {
         std::cerr << "Parsing error: mode is required in the config file and "
-                     "should be a valid string"
-                  << std::endl;
+                     "should be a valid string\n";
         return 1;
     } else if (mode != "train" && mode != "test") {
-        std::cerr << "Parsing error: mode must be either 'train' or 'test'"
-                  << std::endl;
+        std::cerr << "Parsing error: mode must be either 'train' or 'test'\n";
         return 1;
     }
 
