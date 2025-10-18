@@ -146,7 +146,10 @@ MNISTDataset::MNISTDataset(const std::filesystem::path &dataset_path,
 
 torch::data::Example<torch::Tensor, torch::Tensor>
 MNISTDataset::get(size_t index) {
-    throw std::runtime_error("Not implemented yet");
+    torch::Tensor image = image_tensor_[index].clone();
+    torch::Tensor label = label_tensor_[index].clone();
+
+    return {image, label};
 }
 
 torch::optional<size_t> MNISTDataset::size() const { return num_samples_; }
@@ -154,10 +157,18 @@ torch::optional<size_t> MNISTDataset::size() const { return num_samples_; }
 void MNISTDataset::print(bool verbose) const {
     std::cout << "MNIST Dataset Info:\n";
     raw_dataset_->print(verbose);
-    std::cout << "Image Tensor: ";
+
+    std::cout << "\nImage Tensor Info:\n";
+    std::cout << "Device and Shape:";
     image_tensor_.print();
-    std::cout << "Label Tensor: ";
+    std::cout << "Image Tensor Min: " << image_tensor_.min() << "\n";
+    std::cout << "Image Tensor Max: " << image_tensor_.max() << "\n";
+
+    std::cout << "\nLabel Tensor Info:\n";
+    std::cout << "Device and Shape: ";
     label_tensor_.print();
+    std::cout << "Labels:\n"
+              << std::get<0>(torch::_unique(label_tensor_)) << "\n";
 }
 
 MNISTDataset::~MNISTDataset() = default;

@@ -64,8 +64,18 @@ int parse_args(Config &config, CLI::App &app, int argc, char *argv[]) {
         return 1;
     }
 
+    int32_t batch_size = tbl["batch_size"].value_or<int32_t>(0);
+    if (batch_size <= 0) {
+        std::cerr << "Parsing error: batch_size must be a positive integer\n";
+        return 1;
+    }
+
+    bool drop_last = tbl["drop_last"].value_or<bool>(false);
+
     config.dataset_path = std::filesystem::path(dataset_path);
     config.mode = mode == "train" ? Mode::TRAIN : Mode::TEST;
+    config.batch_size = batch_size;
+    config.drop_last = drop_last;
 
     return 0;
 }
