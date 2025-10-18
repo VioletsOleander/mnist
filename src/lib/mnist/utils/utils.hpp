@@ -18,7 +18,8 @@ std::string mode_to_string(Mode mode);
 struct Config {
     std::filesystem::path dataset_path;
     Mode mode;
-    size_t batch_size;
+    uint32_t batch_size;
+    uint8_t num_workers;
     bool drop_last;
 };
 

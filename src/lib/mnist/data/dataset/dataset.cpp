@@ -137,7 +137,7 @@ namespace mnist::data {
 MNISTDataset::MNISTDataset(const std::filesystem::path &dataset_path,
                            const mnist::utils::Mode &mode) {
     raw_dataset_ =
-        std::make_unique<internal::MNISTRawDataset>(dataset_path, mode);
+        std::make_shared<internal::MNISTRawDataset>(dataset_path, mode);
 
     image_tensor_ = raw_dataset_->construct_image_tensor();
     label_tensor_ = raw_dataset_->construct_label_tensor();
@@ -170,6 +170,11 @@ void MNISTDataset::print(bool verbose) const {
     std::cout << "Labels:\n"
               << std::get<0>(torch::_unique(label_tensor_)) << "\n";
 }
+
+MNISTDataset::MNISTDataset(const MNISTDataset &other) = default;
+MNISTDataset &MNISTDataset::operator=(const MNISTDataset &other) = default;
+MNISTDataset::MNISTDataset(MNISTDataset &&other) noexcept = default;
+MNISTDataset &MNISTDataset::operator=(MNISTDataset &&other) noexcept = default;
 
 MNISTDataset::~MNISTDataset() = default;
 
