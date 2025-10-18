@@ -64,11 +64,13 @@ int parse_args(Config &config, CLI::App &app, int argc, char *argv[]) {
         return 1;
     }
 
-    size_t batch_size = tbl["batch_size"].value_or<size_t>(0);
+    uint32_t batch_size = tbl["batch_size"].value_or<uint32_t>(0);
     if (batch_size <= 0) {
         std::cerr << "Parsing error: batch_size must be a positive integer\n";
         return 1;
     }
+
+    uint8_t num_workers = tbl["num_workers"].value_or<uint8_t>(0);
 
     bool drop_last = tbl["drop_last"].value_or<bool>(false);
 

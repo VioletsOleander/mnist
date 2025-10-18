@@ -171,6 +171,11 @@ void MNISTDataset::print(bool verbose) const {
               << std::get<0>(torch::_unique(label_tensor_)) << "\n";
 }
 
+MNISTDataset::MNISTDataset(const MNISTDataset &other) = default;
+MNISTDataset &MNISTDataset::operator=(const MNISTDataset &other) = default;
+MNISTDataset::MNISTDataset(MNISTDataset &&other) noexcept = default;
+MNISTDataset &MNISTDataset::operator=(MNISTDataset &&other) noexcept = default;
+
 MNISTDataset::~MNISTDataset() = default;
 
 } // namespace mnist::data
