@@ -4,4 +4,8 @@
         "CMAKE_PREFIX_PATH": "${workspaceFolder}/.pixi/envs/default/share/cmake"
     },
     "cmake.automaticReconfigure": false,
+    "files.readonlyInclude": {
+        ".pixi/**": true
+    },
+    "files.readonlyFromPermissions": true,
 }
