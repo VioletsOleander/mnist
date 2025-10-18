@@ -64,7 +64,7 @@ int parse_args(Config &config, CLI::App &app, int argc, char *argv[]) {
         return 1;
     }
 
-    int32_t batch_size = tbl["batch_size"].value_or<int32_t>(0);
+    size_t batch_size = tbl["batch_size"].value_or<size_t>(0);
     if (batch_size <= 0) {
         std::cerr << "Parsing error: batch_size must be a positive integer\n";
         return 1;
