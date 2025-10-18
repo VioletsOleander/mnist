@@ -1,4 +1,4 @@
-dataset_path = "/home/vios/github-repos/mnist/dataset/processed/" # path to the dataset
+dataset_path = "/path/to/dataset"                                 # path to the dataset
 mode = "test"                                                     # mode: "train" or "test"
 batch_size = 64                                                   # batch size for data loading
 drop_last = false                                                 # whether to drop the last incomplete batch
