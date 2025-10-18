@@ -18,6 +18,8 @@ std::string mode_to_string(Mode mode);
 struct Config {
     std::filesystem::path dataset_path;
     Mode mode;
+    size_t batch_size;
+    bool drop_last;
 };
 
 int parse_args(Config &config, CLI::App &app, int argc, char *argv[]);
