@@ -24,8 +24,8 @@ class MNISTDataset : public torch::data::Dataset<MNISTDataset> {
     explicit MNISTDataset(const std::filesystem::path &dataset_path,
                           const mnist::utils::Mode &mode);
 
-    // explicit destructor let compiler defer the generation of destructor in
-    // the source file, that is, after the declaration of MNISTRawDataset
+    // explicit destructor lets the compiler defer generation to the source file,
+    // after the definition of MNISTRawDataset (needed for unique_ptr to an incomplete type)
     ~MNISTDataset() override;
 
     // since we have unique_ptr member, we delete copy constructor and copy
