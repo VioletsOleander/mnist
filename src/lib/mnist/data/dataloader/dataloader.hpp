@@ -23,9 +23,9 @@ make_data_loader(MNISTDataset &&dataset, const mnist::utils::Config &config) {
                        .drop_last(config.drop_last)
                        .workers(config.num_workers);
 
-    if (config.batch_size >= dataset.size()) {
+    if (config.batch_size > dataset.size()) {
         options.batch_size(dataset.size().value());
-        std::cout << "Warning: batch_size is larger than dataset size. "
+        std::cerr << "Warning: batch_size is larger than dataset size. "
                      "Setting batch_size to dataset size: "
                   << options.batch_size() << "\n";
     } else {

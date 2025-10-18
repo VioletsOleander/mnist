@@ -78,6 +78,7 @@ int parse_args(Config &config, CLI::App &app, int argc, char *argv[]) {
     config.mode = mode == "train" ? Mode::TRAIN : Mode::TEST;
     config.batch_size = batch_size;
     config.drop_last = drop_last;
+    config.num_workers = num_workers;
 
     return 0;
 }
