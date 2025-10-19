@@ -1,16 +1,23 @@
+#include <cassert>
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <ios>
+#include <iostream>
 #include <memory>
+#include <stdexcept>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include <torch/torch.h>
 
 #include "dataset.hpp"
 #include "mnist/utils/utils.hpp"
 
-constexpr size_t MNIST_IMAGE_WIDTH = 28;
-constexpr size_t MNIST_IMAGE_HEIGHT = 28;
-constexpr size_t MNIST_IMAGE_SIZE = MNIST_IMAGE_WIDTH * MNIST_IMAGE_HEIGHT;
+constexpr uint64_t MNIST_IMAGE_WIDTH = 28;
+constexpr uint64_t MNIST_IMAGE_HEIGHT = 28;
+constexpr uint64_t MNIST_IMAGE_SIZE = MNIST_IMAGE_WIDTH * MNIST_IMAGE_HEIGHT;
 
 namespace fs = std::filesystem;
 
@@ -26,13 +33,13 @@ class MNISTRawDataset {
     torch::Tensor construct_image_tensor() const;
     torch::Tensor construct_label_tensor() const;
 
-    size_t get_num_samples() const;
+    uint64_t get_num_samples() const;
 
     void print(bool verbose) const;
 
   private:
-    size_t num_images_;
-    size_t num_labels_;
+    uint64_t num_images_;
+    uint64_t num_labels_;
 
     std::vector<uint8_t> image_buffer_;
     std::vector<uint8_t> label_buffer_;
@@ -66,7 +73,7 @@ MNISTRawDataset::MNISTRawDataset(const fs::path &dataset_path,
     }
 
     image_file.seekg(0, std::ios::end);
-    size_t file_size = image_file.tellg();
+    uint64_t file_size = image_file.tellg();
     image_file.seekg(0, std::ios::beg);
 
     assert(file_size % MNIST_IMAGE_SIZE == 0 &&
@@ -119,7 +126,7 @@ torch::Tensor MNISTRawDataset::construct_label_tensor() const {
     return label_tensor;
 }
 
-size_t MNISTRawDataset::get_num_samples() const { return num_images_; }
+uint64_t MNISTRawDataset::get_num_samples() const { return num_images_; }
 
 void MNISTRawDataset::print(bool verbose) const {
     std::cout << "Mode: " << utils::mode_to_string(mode_) << "\n";
@@ -145,14 +152,14 @@ MNISTDataset::MNISTDataset(const std::filesystem::path &dataset_path,
 }
 
 torch::data::Example<torch::Tensor, torch::Tensor>
-MNISTDataset::get(size_t index) {
+MNISTDataset::get(uint64_t index) {
     torch::Tensor image = image_tensor_[index].clone();
     torch::Tensor label = label_tensor_[index].clone();
 
     return {image, label};
 }
 
-torch::optional<size_t> MNISTDataset::size() const { return num_samples_; }
+torch::optional<uint64_t> MNISTDataset::size() const { return num_samples_; }
 
 void MNISTDataset::print(bool verbose) const {
     std::cout << "MNIST Dataset Info:\n";

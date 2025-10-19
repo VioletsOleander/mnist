@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <filesystem>
 #include <memory>
 
@@ -36,9 +37,9 @@ class MNISTDataset : public torch::data::Dataset<MNISTDataset> {
 
     /// retrieve a single data sample given index (clone to own the memory)
     torch::data::Example<torch::Tensor, torch::Tensor>
-    get(size_t index) override;
+    get(uint64_t index) override;
 
-    torch::optional<size_t> size() const override;
+    torch::optional<uint64_t> size() const override;
 
     void print(bool verbose = false) const;
 
@@ -46,7 +47,7 @@ class MNISTDataset : public torch::data::Dataset<MNISTDataset> {
     torch::Tensor image_tensor_;
     torch::Tensor label_tensor_;
 
-    size_t num_samples_;
+    uint64_t num_samples_;
     std::shared_ptr<internal::MNISTRawDataset> raw_dataset_;
 };
 
