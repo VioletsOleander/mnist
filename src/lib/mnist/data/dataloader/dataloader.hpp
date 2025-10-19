@@ -1,6 +1,9 @@
 #pragma once
 
+#include <iostream>
 #include <memory>
+#include <stdexcept>
+#include <utility>
 
 #include <torch/torch.h>
 

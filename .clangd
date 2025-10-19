@@ -1,0 +1,10 @@
+Diagnostics:
+  UnusedIncludes: Strict
+  MissingIncludes: Strict  
+  Includes:
+    # in order to prevent clangd from suggesting to include inner headers from these libraries
+    IgnoreHeader:
+      - ".*/torch/csrc/.*"
+      - ".*/ATen/.*"
+      - ".*/c10/.*"
+      - ".*/toml\\+\\+/.*"
