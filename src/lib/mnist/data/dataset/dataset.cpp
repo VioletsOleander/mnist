@@ -73,7 +73,11 @@ MNISTRawDataset::MNISTRawDataset(const fs::path &dataset_path,
     }
 
     image_file.seekg(0, std::ios::end);
-    uint64_t file_size = image_file.tellg();
+    std::streampos pos = image_file.tellg();
+    if (pos == std::streampos(-1)) {
+        throw std::runtime_error("Failed to determine image file size: " + file_paths.first.string());
+    }
+    uint64_t file_size = static_cast<uint64_t>(pos);
     image_file.seekg(0, std::ios::beg);
 
     assert(file_size % MNIST_IMAGE_SIZE == 0 &&
