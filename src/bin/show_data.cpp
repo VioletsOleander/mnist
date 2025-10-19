@@ -1,5 +1,7 @@
+#include <iostream>
 #include <memory>
 #include <string>
+#include <utility>
 
 #include <CLI/CLI.hpp>
 #include <mnist/mnist.hpp>
