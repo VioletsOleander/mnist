@@ -1,7 +1,15 @@
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <ios>
+#include <iostream>
 #include <memory>
+#include <stdexcept>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include <torch/torch.h>
 
