@@ -75,10 +75,10 @@ description = "Converts the Parquet dataset to raw binary images and text labels
 depends-on = ["get-dataset"]
 inputs = ["scripts/preprocess.py"]
 outputs = [
-  "dataset/processed/test/images.bin",
-  "dataset/processed/train/labels.bin",
   "dataset/processed/train/images.bin",
-  "dataset/processed/test/labels.bin",
+  "dataset/processed/train/labels.txt",
+  "dataset/processed/test/images.bin",
+  "dataset/processed/test/labels.txt"
 ]
 
 [environments]
