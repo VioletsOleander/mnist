@@ -39,7 +39,7 @@ pixi r configure release
 Train the network:
 
 ```bash
-pixi r train <path-to-config-file>
+pixi r train <path-to-train-config-file>
 ```
 
 For example:
