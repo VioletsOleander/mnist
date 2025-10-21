@@ -11,14 +11,30 @@ version = "0.1.0"
 args = [{ arg = "build_type", default = "debug" }]
 cmd = "cmake --preset={{ build_type }} -B build"
 description = "Configure the project using CMake"
+inputs = [
+  "CMakeLists.txt",
+  "src/CMakeLists.txt",
+  "src/bin/CMakeLists.txt",
+  "src/lib/mnist/CMakeLists.txt",
+]
+outputs = ["build/build.ninja"]
 
 [tasks.build]
 cmd = "cmake --build build"
 description = "Build the project with generated configuration files"
 
-[tasks.run]
-cmd = "./build/mnist"
-description = "Run the MNIST executable"
+[tasks.train]
+args = [{ arg = "config", default = "configs/train.toml" }]
+cmd = "./build/bin/mnist_train {{ config }}"
+description = "Run the MNIST training executable"
+# inputs = ["build/bin/mnist_train", "{{ config }}"]
+# outputs = ["checkpoints/mnist_model.pt"]
+
+[tasks.test]
+args = [{ arg = "config", default = "configs/test.toml" }]
+cmd = "./build/bin/mnist_test {{ config }}"
+description = "Run the MNIST testing executable"
+# inputs = ["build/bin/mnist_test", "{{ config }}"]
 
 [dependencies]
 libtorch = { version = ">=2.8.0,<3", build = "*cpu*" }
@@ -47,14 +63,23 @@ description = "Log in to Hugging Face using the provided token"
 [feature.dataset.tasks.get-dataset]
 cmd = "hf download --repo-type dataset --local-dir dataset/raw ylecun/mnist"
 description = "Download the MNIST dataset from Hugging Face"
-outputs = ["dataset/raw/mnist/*.parquet", "dataset/raw/.gitattributes", "dataset/raw/README.md"]
+outputs = [
+  "dataset/raw/mnist/*.parquet",
+  "dataset/raw/.gitattributes",
+  "dataset/raw/README.md",
+]
 
 [feature.dataset.tasks.process-dataset]
 cmd = "python scripts/preprocess.py"
 description = "Converts the Parquet dataset to raw binary images and text labels."
 depends-on = ["get-dataset"]
 inputs = ["scripts/preprocess.py"]
-outputs = ["dataset/processed/*"]
+outputs = [
+  "dataset/processed/train/images.bin",
+  "dataset/processed/train/labels.txt",
+  "dataset/processed/test/images.bin",
+  "dataset/processed/test/labels.txt"
+]
 
 [environments]
 dataset = { features = ["dataset"], no-default-feature = true }
