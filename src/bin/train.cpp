@@ -48,6 +48,8 @@ int main(int argc, char *argv[]) {
     }
     std::cout << "Training complete.\n";
 
+    // I currently can not figure out why this works, because I only found an
+    // overload for torch::Tensor instead of shared_ptr<torch::nn::Module>
     torch::save(net, config.model_path.string());
     std::cout << "Model saved to " << config.model_path << "\n";
 

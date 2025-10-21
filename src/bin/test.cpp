@@ -1,7 +1,6 @@
 #include <cstdint>
 #include <iostream>
 #include <memory>
-#include <torch/utils.h>
 #include <utility>
 
 #include <CLI/CLI.hpp>
