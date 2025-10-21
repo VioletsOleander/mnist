@@ -7,16 +7,16 @@
 
 #include <torch/torch.h>
 
-#include "mnist/data/dataset/dataset.hpp"
 #include "mnist/utils/utils.hpp"
 
 namespace mnist::data {
 
 // referenced lots of the implementation of torch::data::make_data_loader
 
-template <typename Sampler = torch::data::samplers::RandomSampler>
-std::unique_ptr<torch::data::StatelessDataLoader<MNISTDataset, Sampler>>
-make_data_loader(MNISTDataset &&dataset, const mnist::utils::Config &config) {
+template <typename Dataset,
+          typename Sampler = torch::data::samplers::RandomSampler>
+std::unique_ptr<torch::data::StatelessDataLoader<Dataset, Sampler>>
+make_data_loader(Dataset &&dataset, const mnist::utils::Config &config) {
     if (dataset.size().has_value() == false) {
         throw std::runtime_error(
             "Dataset size is unknown. Cannot create DataLoader.");
@@ -37,8 +37,7 @@ make_data_loader(MNISTDataset &&dataset, const mnist::utils::Config &config) {
 
     auto sampler = Sampler(dataset.size().value());
 
-    return std::make_unique<
-        torch::data::StatelessDataLoader<MNISTDataset, Sampler>>(
+    return std::make_unique<torch::data::StatelessDataLoader<Dataset, Sampler>>(
         std::move(dataset), std::move(sampler), options);
 }
 

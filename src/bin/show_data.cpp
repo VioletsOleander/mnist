@@ -20,15 +20,16 @@ int main(int argc, char *argv[]) {
 
     dataset.print(true);
 
-    auto dataloader = mnist::data::make_data_loader(std::move(dataset), config);
+    auto dataloader = mnist::data::make_data_loader(
+        std::move(dataset.map(torch::data::transforms::Stack<>())), config);
 
-    for (auto batch : *dataloader) {
-        std::cout << "\nBatch size: " << batch.size() << "\n";
+    for (auto &batch : *dataloader) {
+        std::cout << "\nBatch size: " << batch.data.sizes()[0] << "\n";
         std::cout << "\nFirst sample in the batch:\n";
         std::cout << "\nImage Tensor:\n";
-        std::cout << batch[0].data << "\n";
+        std::cout << batch.data << "\n";
         std::cout << "\nLabel Tensor:\n";
-        std::cout << batch[0].target << "\n";
+        std::cout << batch.target << "\n";
         break; // only show the first batch
     }
 
