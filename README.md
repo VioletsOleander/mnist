@@ -6,6 +6,10 @@ A toy based on libtorch API.
 
 This project is managed by [Pixi](https://github.com/prefix-dev/pixi/). Before moving on, please ensure it is installed already.
 
+Target platform: linux-64
+
+Target device: cpu
+
 ## 2. Getting Started
 
 ### Get Data
