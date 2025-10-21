@@ -1,6 +1,7 @@
 #include <cstdint>
 #include <iostream>
 #include <memory>
+#include <torch/utils.h>
 #include <utility>
 
 #include <CLI/CLI.hpp>
@@ -8,7 +9,7 @@
 #include <torch/torch.h>
 
 int main(int argc, char *argv[]) {
-    CLI::App app{"MNIST Training Application"};
+    CLI::App app{"MNIST Evaluation Application"};
     mnist::utils::Config config;
 
     if (int result = mnist::utils::parse_args(config, app, argc, argv);
@@ -29,18 +30,27 @@ int main(int argc, char *argv[]) {
     int64_t correct_samples = 0;
     int64_t total_samples = 0;
 
+    net->eval();
     std::cout << "Starting evaluation...\n";
-    for (auto &batch : *dataloader) {
-        auto prediction = net->forward(batch.data);
-        auto predicted_labels = prediction.argmax(1);
-        auto correct = predicted_labels.eq(batch.target).sum().item<int64_t>();
-        total_samples += batch.target.size(0);
-        correct_samples += correct;
+    {
+        torch::NoGradGuard no_grad;
+        for (auto &batch : *dataloader) {
+            auto prediction = net->forward(batch.data);
+            auto predicted_labels = prediction.argmax(1);
+            auto correct =
+                predicted_labels.eq(batch.target).sum().item<int64_t>();
+            total_samples += batch.target.size(0);
+            correct_samples += correct;
+        }
     }
-    float accuracy =
-        static_cast<float>(correct_samples) / static_cast<float>(total_samples);
-    std::cout << "Accuracy = " << correct_samples << " / " << total_samples
-              << " = " << accuracy * 100.0f << "%\n";
+    if (total_samples == 0) {
+        std::cout << "No samples to evaluate, accuracy is 0%.\n";
+    } else {
+        float accuracy = static_cast<float>(correct_samples) /
+                         static_cast<float>(total_samples);
+        std::cout << "Accuracy = " << correct_samples << " / " << total_samples
+                  << " = " << accuracy * 100.0f << "%\n";
+    }
 
     return 0;
 }

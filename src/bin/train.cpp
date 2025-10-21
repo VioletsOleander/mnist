@@ -27,6 +27,7 @@ int main(int argc, char *argv[]) {
     auto optim = torch::optim::SGD(
         net->parameters(), torch::optim::SGDOptions(0.01).momentum(0.9));
 
+    net->train();
     std::cout << "Starting training for " << config.epochs << " epochs...\n";
     for (size_t epoch = 1; epoch <= config.epochs; ++epoch) {
         size_t batch_index = 0;
@@ -39,7 +40,8 @@ int main(int argc, char *argv[]) {
             optim.step();
 
             if (batch_index++ % 10 == 0) {
-                std::cout << "Epoch: " << epoch << " | Batch: " << batch_index
+                std::cout << "Epoch: " << epoch
+                          << " | Batch: " << batch_index - 1
                           << " | Loss: " << loss.item<float>() << "\n";
             }
         }
