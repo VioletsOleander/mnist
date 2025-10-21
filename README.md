@@ -24,7 +24,7 @@ Configure and build the project:
 
 ```bash
 pixi install -e default
-pixi r configure [release | debug]
+pixi r configure [release|debug]
 pixi r build
 ```
 
