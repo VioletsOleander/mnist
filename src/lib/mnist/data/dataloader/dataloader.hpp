@@ -3,7 +3,6 @@
 #include <iostream>
 #include <memory>
 #include <stdexcept>
-#include <torch/data/dataloader.h>
 #include <utility>
 
 #include <torch/torch.h>
