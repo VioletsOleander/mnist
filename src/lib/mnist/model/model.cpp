@@ -16,7 +16,7 @@ SimpleNet::SimpleNet()
       conv2(torch::nn::Conv2dOptions(16, 32, /*kernel_size=*/3)
                 .stride(1)
                 .padding(1)),
-      fc(7 * 7 * 32, 10),
+      fc(kFlattenDim, 10),
       pool(torch::nn::MaxPool2dOptions(/*kernel_size=*/2).stride(2)) {
     register_module("conv1", conv1);
     register_module("conv2", conv2);
@@ -36,16 +36,16 @@ SimpleNet::SimpleNet()
 
 torch::Tensor SimpleNet::forward(torch::Tensor x) {
     // Input shape: [batch, 1, 28, 28]
-    x = torch::relu(conv1(x));    // [batch, 16, 28, 28]
-    x = pool(x);                  // [batch, 16, 14, 14]
-    x = torch::relu(conv2(x));    // [batch, 32, 14, 14]
-    x = pool(x);                  // [batch, 32, 7, 7]
-    x = x.view({-1, 32 * 7 * 7}); // Flatten to [batch, 1568]
-    x = fc(x);                    // [batch, 10] (raw logits)
+    x = torch::relu(conv1(x));     // [batch, 16, 28, 28]
+    x = pool(x);                   // [batch, 16, 14, 14]
+    x = torch::relu(conv2(x));     // [batch, 32, 14, 14]
+    x = pool(x);                   // [batch, 32, 7, 7]
+    x = x.view({-1, kFlattenDim}); // Flatten to [batch, 1568]
+    x = fc(x);                     // [batch, 10] (raw logits)
     return x;
 }
 
-void SimpleNet::print_weights() {
+void SimpleNet::print_weights() const {
     for (const auto &param : this->named_parameters()) {
         std::cout << param.key() << " - Shape: " << param.value().sizes()
                   << "\n"
