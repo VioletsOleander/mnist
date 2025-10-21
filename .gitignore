@@ -1,9 +1,6 @@
 /dataset/
 /build/
-/temp/
 /.cache/
-/config/*.toml
-!/config/show_data.example.toml
 
 # pixi environments
 .pixi/*
