@@ -4,7 +4,6 @@
 #include <memory>
 #include <stdexcept>
 #include <torch/data/dataloader.h>
-#include <torch/data/transforms/stack.h>
 #include <utility>
 
 #include <torch/torch.h>
