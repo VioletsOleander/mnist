@@ -1,5 +1,6 @@
 add_library(mnist STATIC
     data/dataset/dataset.cpp
+    model/model.cpp
     utils/utils.cpp
 )
 

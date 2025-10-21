@@ -56,6 +56,13 @@ int parse_args(Config &config, CLI::App &app, int argc, char *argv[]) {
         return 1;
     }
 
+    std::string model_path = tbl["model_path"].value_or<std::string>("");
+    if (model_path.empty()) {
+        std::cerr << "Parsing error: model_path is required in the config file "
+                     "and should be a valid string\n";
+        return 1;
+    }
+
     std::string mode = tbl["mode"].value_or<std::string>("");
     if (mode.empty()) {
         std::cerr << "Parsing error: mode is required in the config file and "
@@ -66,8 +73,14 @@ int parse_args(Config &config, CLI::App &app, int argc, char *argv[]) {
         return 1;
     }
 
+    uint32_t epochs = tbl["epochs"].value_or<uint32_t>(0);
+    if (epochs == 0) {
+        std::cerr << "Parsing error: epochs must be a positive integer\n";
+        return 1;
+    }
+
     uint32_t batch_size = tbl["batch_size"].value_or<uint32_t>(0);
-    if (batch_size <= 0) {
+    if (batch_size == 0) {
         std::cerr << "Parsing error: batch_size must be a positive integer\n";
         return 1;
     }
@@ -77,7 +90,9 @@ int parse_args(Config &config, CLI::App &app, int argc, char *argv[]) {
     bool drop_last = tbl["drop_last"].value_or<bool>(false);
 
     config.dataset_path = std::filesystem::path(dataset_path);
+    config.model_path = std::filesystem::path(model_path);
     config.mode = mode == "train" ? Mode::TRAIN : Mode::TEST;
+    config.epochs = epochs;
     config.batch_size = batch_size;
     config.drop_last = drop_last;
     config.num_workers = num_workers;
