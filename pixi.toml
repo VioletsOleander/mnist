@@ -27,14 +27,14 @@ description = "Build the project with generated configuration files"
 args = [{ arg = "config", default = "configs/train.toml" }]
 cmd = "./build/bin/mnist_train {{ config }}"
 description = "Run the MNIST training executable"
-inputs = ["build/bin/mnist_train", "{{ config }}"]
-outputs = ["checkpoints/mnist_model.pt"]
+# inputs = ["build/bin/mnist_train", "{{ config }}"]
+# outputs = ["checkpoints/mnist_model.pt"]
 
 [tasks.test]
 args = [{ arg = "config", default = "configs/test.toml" }]
 cmd = "./build/bin/mnist_test {{ config }}"
 description = "Run the MNIST testing executable"
-inputs = ["build/bin/mnist_test", "{{ config }}"]
+# inputs = ["build/bin/mnist_test", "{{ config }}"]
 
 [dependencies]
 libtorch = { version = ">=2.8.0,<3", build = "*cpu*" }
