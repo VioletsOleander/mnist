@@ -8,7 +8,7 @@ This project is managed by [Pixi](https://github.com/prefix-dev/pixi/). Before m
 
 ## 2. Getting Started
 
-### 2.1 Get Data
+### Get Data
 
 Get dataset and do preprocess:
 
@@ -18,7 +18,7 @@ pixi r get-dataset
 pixi r process-dataset
 ```
 
-### 2.2 Configure and Build
+### Configure and Build
 
 Configure and build the project:
 
@@ -34,7 +34,7 @@ The task `configure` defaults to `debug`. For release configure and build, type:
 pixi r configure release
 ```
 
-### 2.3 Train and Test
+### Train and Test
 
 Train the network:
 
