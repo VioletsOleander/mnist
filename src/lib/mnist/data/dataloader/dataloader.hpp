@@ -16,7 +16,7 @@ namespace mnist::data {
 template <typename Dataset,
           typename Sampler = torch::data::samplers::RandomSampler>
 std::unique_ptr<torch::data::StatelessDataLoader<Dataset, Sampler>>
-make_data_loader(Dataset dataset, const mnist::utils::Config &config) {
+make_data_loader(Dataset&& dataset, const mnist::utils::Config &config) {
     if (dataset.size().has_value() == false) {
         throw std::runtime_error(
             "Dataset size is unknown. Cannot create DataLoader.");
