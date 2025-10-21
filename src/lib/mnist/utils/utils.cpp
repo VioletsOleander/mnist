@@ -74,13 +74,13 @@ int parse_args(Config &config, CLI::App &app, int argc, char *argv[]) {
     }
 
     uint32_t epochs = tbl["epochs"].value_or<uint32_t>(0);
-    if (epochs <= 0) {
+    if (epochs == 0) {
         std::cerr << "Parsing error: epochs must be a positive integer\n";
         return 1;
     }
 
     uint32_t batch_size = tbl["batch_size"].value_or<uint32_t>(0);
-    if (batch_size <= 0) {
+    if (batch_size == 0) {
         std::cerr << "Parsing error: batch_size must be a positive integer\n";
         return 1;
     }
