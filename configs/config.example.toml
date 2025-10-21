@@ -1,0 +1,7 @@
+dataset_path = "/path/to/dataset" # path to the dataset
+mode = "test"                     # mode: "train" or "test"
+batch_size = 64                   # batch size for data loading
+drop_last = false                 # whether to drop the last incomplete batch
+num_workers = 0                   # number of subprocesses for data loading; 0 means loading happens in the main process without spawning worker subprocesses
+epochs = 1                        # number of training epochs
+model_path = "/path/to/model.pt"  # path to save or load the model
